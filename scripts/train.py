@@ -8,6 +8,11 @@ from utils import create_inout_sequences
 from lstm import LSTM
 import matplotlib.pyplot as plt
 
+from tqdm import tqdm
+
+torch.manual_seed(1)
+np.random.seed(1)
+
 df = pd.read_csv("./data/cpu-full-a.csv")
 cpu_vals = np.array(df["cpu"].values)
 
@@ -17,7 +22,7 @@ train_data_normalized = scaler.fit_transform(cpu_vals.reshape(-1,1))
 
 train_data_normalized = torch.FloatTensor(train_data_normalized).view(-1)
 print(len(train_data_normalized))
-train_window = 60
+train_window = 100
 
 train_inout_seq = create_inout_sequences(train_data_normalized, train_window)
 
@@ -26,10 +31,10 @@ model = LSTM()
 loss_function = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
-epochs = 10
+epochs = 100
 
 for i in range(epochs):
-    for seq, labels in train_inout_seq:
+    for seq, labels in tqdm(train_inout_seq):
         optimizer.zero_grad()
         model.hidden_cell = (torch.zeros(1, 1, model.hidden_layer_size),
                         torch.zeros(1, 1, model.hidden_layer_size))
@@ -43,10 +48,9 @@ for i in range(epochs):
 
 torch.save(model, "./models/lstm_time_series.pth")
 
-fut_pred = 100
+fut_pred = 400
 
 test_inputs = train_data_normalized[-train_window:].tolist()
-# print(test_inputs)
 
 model.eval()
 
@@ -60,7 +64,7 @@ for i in range(fut_pred):
 actual_predictions = scaler.inverse_transform(np.array(test_inputs[train_window:] ).reshape(-1, 1))
 # print(actual_predictions)
 
-x = np.arange(132, 232, 1)
+x = np.arange(132, 532, 1)
 plt.grid(True)
 plt.autoscale(axis='x', tight=True)
 plt.plot(df['cpu'])
